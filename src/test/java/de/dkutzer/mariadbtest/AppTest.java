@@ -1,5 +1,8 @@
 package de.dkutzer.mariadbtest;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,6 +15,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
+import com.ibatis.common.jdbc.ScriptRunner;
 
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfiguration;
@@ -38,6 +43,12 @@ public class AppTest
 		db.createDB("test");
         connection = DriverManager.getConnection(configBuilder.getURL("test"), "root", "");
         Deencapsulation.setField(MariaDBPersonController.class, "connection", connection);
+	
+        String path = AppTest.class.getClassLoader().getResource("testMockDB.sql").getPath();
+        ScriptRunner sr = new ScriptRunner(connection, false, false);
+        Reader reader = new BufferedReader(new FileReader(path));
+        sr.runScript(reader);
+	
 	}
 
 	@AfterClass
@@ -66,16 +77,15 @@ public class AppTest
 	public void test() throws Exception {
 
 		List<PersonDTO> allPersons = MariaDBPersonController.findAllPersons();
-		assertThat(allPersons).isEmpty();
 
 		MariaDBPersonController.insertPerson(new PersonDTO("Achim", "Menzel", 1));
 		allPersons = MariaDBPersonController.findAllPersons();
-		assertThat(allPersons).hasSize(1);
+		assertThat(allPersons).hasSize(3);
 
 		MariaDBPersonController.insertPerson(new PersonDTO("Dietmar",
 				"Wischmeyer", 2));
 		allPersons = MariaDBPersonController.findAllPersons();
-		assertThat(allPersons).hasSize(2);
+		assertThat(allPersons).hasSize(4);
 
 		List<PersonDTO> findPersonByName = MariaDBPersonController
 				.findPersonByName("Achim");
